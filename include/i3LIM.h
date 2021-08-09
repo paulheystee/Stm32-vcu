@@ -9,6 +9,7 @@
 #include "my_fp.h"
 #include "params.h"
 #include "stm32_can.h"
+#include "my_math.h"
 
 enum class i3LIMChargingState
 {
