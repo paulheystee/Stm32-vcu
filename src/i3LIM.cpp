@@ -156,10 +156,12 @@ CCS_Plim = (bytes[6]>>4)&0x03;
 }
 
 void i3LIMClass::handle272(uint32_t data[2])  //Lim data. CCS contactor state and charge flap open/close status.
-
 {
 uint8_t* bytes = (uint8_t*)data;// arrgghhh this converts the two 32bit array into bytes. See comments are useful:)
-[[maybe_unused]] uint8_t Cont_stat=bytes[2];
+// Only the top 6-bits indicate the contactor state
+uint8_t Cont_stat=bytes[2] >> 2;
+Param::SetInt(Param::CCS_Contactor,Cont_stat);
+
 uint8_t drmodes=bytes[2]&0x03;
 Param::SetInt(Param::CP_DOOR,drmodes);
 }
@@ -537,8 +539,8 @@ Charge phase 4,
 
     case 0:
     {
- //   Chg_Phase=ChargePhase::Standby;
- Chg_Phase=ChargePhase::Initialisation;
+    Chg_Phase=ChargePhase::Standby;
+ //Chg_Phase=ChargePhase::Initialisation;
     CONT_Ctrl=0x0; //dc contactor mode control required in DC
     FC_Cur=0;//ccs current request from web ui for now.
   EOC_Time=0x00;//end of charge timer
@@ -621,59 +623,58 @@ Charge phase 4,
     }
         break;
 
-             case 4:
+        case 4:
         {
-    Chg_Phase=ChargePhase::Subpoena;//precharge phase in this state
-    CONT_Ctrl=0x0; //dc contactor mode control required in DC
-    FC_Cur=0;//ccs current request from web ui for now.
- // EOC_Time=0x1E;//end of charge timer
-  CHG_Status=ChargeStatus::Init;
-  CHG_Req=ChargeRequest::Charge;
-  CHG_Ready=ChargeReady::Rdy;
-  CHG_Pwr=44000/25;//49kw approx power
-    CCSI_Spnt=0;//No current
+            Chg_Phase = ChargePhase::Subpoena; //precharge phase in this state
+            CONT_Ctrl = 0x0;                   //dc contactor mode control required in DC
+            FC_Cur = 0;                        //ccs current request from web ui for now.
+                                               // EOC_Time=0x1E;//end of charge timer
+            CHG_Status = ChargeStatus::Init;
+            CHG_Req = ChargeRequest::Charge;
+            CHG_Ready = ChargeReady::Rdy;
+            CHG_Pwr = 44000 / 25; //49kw approx power
+            CCSI_Spnt = 0;        //No current
 
-        if((Param::GetInt(Param::udc)-Cont_Volts)<20)
-        {
-           lim_stateCnt++; //we wait for the contactor voltage to be 20v or less diff to main batt v
+            if ((Param::GetInt(Param::udc) - Cont_Volts) < 20)
+            {
+                lim_stateCnt++; //we wait for the contactor voltage to be 20v or less diff to main batt v
+            }
+            else
+            {
+                // If the contactor voltage wanders out of range start again
+                lim_stateCnt = 0;
+            }
 
+            // Wait for contactor voltage to be stable for 4 seconds
+            if (lim_stateCnt > 10)
+            {
+                lim_state++; //next state after 4 secs
+                lim_stateCnt = 0;
+            }
         }
-
-        if(lim_stateCnt>10)//need to close con at pch stage
-        {
-           lim_state++; //next state after 4 secs
-           lim_stateCnt=0;
-           CONT_Ctrl=0x2; //dc contactor to close mode
-        }
-
-    }
         break;
-    case 5:
+        case 5:
         {
-        lim_state++; //just go to 6.
-        /*
-    Chg_Phase=ChargePhase::EnergyTransfer;
-    CONT_Ctrl=0x2; //dc contactor to close mode
-    FC_Cur=0;//ccs current request from web ui for now.
-  EOC_Time=0xFE;//end of charge timer
-  CHG_Status=ChargeStatus::Rdy;
- // CHG_Status=ChargeStatus::Rdy; //test here
-  CHG_Req=ChargeRequest::Charge;
-  CHG_Ready=ChargeReady::Rdy;
-  CHG_Pwr=44000/25;//49kw approx power
-  CCSI_Spnt=0;//No current
+             //precharge phase in this state but voltage close enough to close contactors
+            Chg_Phase = ChargePhase::Subpoena;
+            CONT_Ctrl = 0x2;                   //dc contactor closed
+            FC_Cur = 0;                        //ccs current request from web ui for now.
+                                               // EOC_Time=0x1E;//end of charge timer
+            CHG_Status = ChargeStatus::Init;
+            CHG_Req = ChargeRequest::Charge;
+            CHG_Ready = ChargeReady::Rdy;
+            CHG_Pwr = 44000 / 25; //49kw approx power
+            CCSI_Spnt = 0;        //No current
 
-        lim_stateCnt++;
-        if(lim_stateCnt>10) //wait 2 seconds
-        {
-           lim_state++; //next state after 2 secs
-           lim_stateCnt=0;
+            // Once the contactors report as closed we're OK to proceed to energy transfer
+            if (Param::GetBool(Param::CCS_Contactor))
+            {
+                lim_state++;
+            }
         }
-*/
-    }
         break;
 
-      case 6:
+        case 6:
         {
     Chg_Phase=ChargePhase::EnergyTransfer;
     CONT_Ctrl=0x2; //dc contactor to close mode
