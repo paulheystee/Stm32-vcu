@@ -20,8 +20,6 @@
  */
 #include "stm32_vcu.h"
 
-#define RMS_SAMPLES 256
-#define SQRT2OV1 0.707106781187
 #define  UserCAN  2
 #define  BMW_E46  0
 #define  User  2
@@ -59,9 +57,9 @@ uint8_t CabHeater,CabHeater_ctrl;
 
 
 static volatile unsigned
-	days=0,
-	hours=0, minutes=0, seconds=0,
-	alarm=0;			// != 0 when alarm is pending
+   days=0,
+   hours=0, minutes=0, seconds=0,
+   alarm=0;			// != 0 when alarm is pending
 
 // Instantiate Classes
 BMW_E65Class E65Vehicle;
@@ -74,66 +72,61 @@ CAN3_Msg CAN3;
 
 static void RunChaDeMo()
 {
-   static uint32_t connectorLockTime = 0;
+    static uint32_t connectorLockTime = 0;
 
-             chargeMode = true;//General chg boolean. Sets vcu into charge startup.
+    chargeMode = true;//General chg boolean. Sets vcu into charge startup.
 
 
-   /* 1s after entering charge mode, enable charge permission */
-   if (Param::GetInt(Param::opmode) == MOD_CHARGE)
-   {
-      ChaDeMo::SetEnabled(true);
+    /* 1s after entering charge mode, enable charge permission */
+    if (Param::GetInt(Param::opmode) == MOD_CHARGE)
+    {
+        ChaDeMo::SetEnabled(true);
         //here we will need a gpio output to pull the chademo enable signal low
         //main contactor close?
-   }
+    }
 
-   if (connectorLockTime == 0 && ChaDeMo::ConnectorLocked())
-   {
-      connectorLockTime = rtc_get_counter_val();
-
-   }
-   //10s after locking tell EVSE that we closed the contactor (in fact we have no control). Oh yes we do! Muhahahahaha
-   if (Param::GetInt(Param::opmode) == MOD_CHARGE && (rtc_get_counter_val() - connectorLockTime) > 1000)
-   {
-       //do not do 10 seconds!
-       DigIo::gp_out3.Set();//Chademo relay on
-      ChaDeMo::SetContactor(true);
+    if (connectorLockTime == 0 && ChaDeMo::ConnectorLocked())
+    {
+        connectorLockTime = rtc_get_counter_val();
+    }
+    //10s after locking tell EVSE that we closed the contactor (in fact we have no control). Oh yes we do! Muhahahahaha
+    if (Param::GetInt(Param::opmode) == MOD_CHARGE && (rtc_get_counter_val() - connectorLockTime) > 1000)
+    {
+        //do not do 10 seconds!
+        DigIo::gp_out3.Set();//Chademo relay on
+        ChaDeMo::SetContactor(true);
         chargeModeDC = true;   //DC charge mode
         Param::SetInt(Param::chgtyp,DCFC);
-   }
+    }
 
-   if (Param::GetInt(Param::chgtyp) == DCFC)
-   {
-      int chargeCur = Param::GetInt(Param::CCS_ICmd);
-      int chargeLim = Param::GetInt(Param::CCS_ILim);
-      chargeCur = MIN(MIN(255, chargeLim), chargeCur);
-      ChaDeMo::SetChargeCurrent(chargeCur);
-      ChaDeMo::CheckSensorDeviation(Param::GetInt(Param::udc));
-   }
+    if (Param::GetInt(Param::chgtyp) == DCFC)
+    {
+        int chargeCur = Param::GetInt(Param::CCS_ICmd);
+        int chargeLim = Param::GetInt(Param::CCS_ILim);
+        chargeCur = MIN(MIN(255, chargeLim), chargeCur);
+        ChaDeMo::SetChargeCurrent(chargeCur);
+        ChaDeMo::CheckSensorDeviation(Param::GetInt(Param::udc));
+    }
 
+    ChaDeMo::SetTargetBatteryVoltage(Param::GetInt(Param::Voltspnt));
+    ChaDeMo::SetSoC(Param::Get(Param::CCS_SOCLim));
+    Param::SetInt(Param::CCS_Ireq, ChaDeMo::GetRampedCurrentRequest());
 
+    if (chargeMode)
+    {
+        if (Param::Get(Param::SOC) >= Param::Get(Param::CCS_SOCLim) ||
+            Param::GetInt(Param::CCS_ILim) == 0)
+        {
+            ChaDeMo::SetEnabled(false);
+            DigIo::gp_out3.Clear();//Chademo relay off
+            chargeMode = false;
+        }
 
-   ChaDeMo::SetTargetBatteryVoltage(Param::GetInt(Param::Voltspnt));
-   ChaDeMo::SetSoC(Param::Get(Param::CCS_SOCLim));
-   Param::SetInt(Param::CCS_Ireq, ChaDeMo::GetRampedCurrentRequest());
-
-   if (chargeMode)
-   {
-      if (Param::Get(Param::SOC) >= Param::Get(Param::CCS_SOCLim) ||
-          Param::GetInt(Param::CCS_ILim) == 0)
-      {
-
-         ChaDeMo::SetEnabled(false);
-         DigIo::gp_out3.Clear();//Chademo relay off
-         chargeMode = false;
-      }
-
-      Param::SetInt(Param::CCS_V, ChaDeMo::GetChargerOutputVoltage());
-      Param::SetInt(Param::CCS_I, ChaDeMo::GetChargerOutputCurrent());
-      ChaDeMo::SendMessages();
-   }
-   Param::SetInt(Param::CCS_State, ChaDeMo::GetChargerStatus());
-
+        Param::SetInt(Param::CCS_V, ChaDeMo::GetChargerOutputVoltage());
+        Param::SetInt(Param::CCS_I, ChaDeMo::GetChargerOutputCurrent());
+        ChaDeMo::SendMessages();
+    }
+    Param::SetInt(Param::CCS_State, ChaDeMo::GetChargerStatus());
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -147,12 +140,16 @@ static void Ms200Task(void)
     Param::SetInt(Param::Min,minutes);
     Param::SetInt(Param::Sec,seconds);
     Param::SetInt(Param::ChgT,ChgDur_tmp);
-    if(ChgSet==2 && !ChgLck){ //if in timer mode and not locked out from a previous full charge.
+
+    if(ChgSet==2 && !ChgLck)
+    { //if in timer mode and not locked out from a previous full charge.
         if(opmode!=MOD_CHARGE)
-            {
-            if((ChgHrs_tmp==hours)&&(ChgMins_tmp==minutes)&&(ChgDur_tmp!=0))RunChg=true;//if we arrive at set charge time and duration is non zero then initiate charge
-            else RunChg=false;
-            }
+        {
+            if((ChgHrs_tmp==hours) && (ChgMins_tmp==minutes) && (ChgDur_tmp!=0))
+                RunChg=true;//if we arrive at set charge time and duration is non zero then initiate charge
+            else
+                RunChg=false;
+        }
 
         if(opmode==MOD_CHARGE)
         {
@@ -189,62 +186,55 @@ static void Ms200Task(void)
 
     }
 
-
-
     if(targetChgint == _interface::Leaf_PDM) //Leaf Gen2 PDM charger/DCDC/Chademo
     {
       if (opmode == MOD_CHARGE || opmode == MOD_RUN)  DigIo::inv_out.Set();//inverter and PDM power on if using pdm and in chg mode or in run mode
       if (opmode == MOD_OFF)  DigIo::inv_out.Clear();//inverter and pdm off in off mode. Duh!
     }
 
-
-
     if(targetChgint == _interface::i3LIM) //BMW i3 LIM
     {
         i3LIMClass::Send200msMessages();
 
-       if (opmode == MOD_OFF)
-    {
-        Param::SetInt(Param::chgtyp,OFF);
-      auto LIMmode=i3LIMClass::Control_Charge(RunChg);
-      if(LIMmode==i3LIMChargingState::DC_Chg)   //DC charge mode
-      {
-            chargeMode = true;
-            chargeModeDC = true;   //DC charge mode
-          Param::SetInt(Param::chgtyp,DCFC);
-      }
-      if(LIMmode==i3LIMChargingState::AC_Chg)
-      {
-          chargeMode = true;   //AC charge mode
-          Param::SetInt(Param::chgtyp,AC);
-      }
-
-      if(LIMmode==i3LIMChargingState::No_Chg) chargeMode = false;  //no charge mode
-    }
-
-    if (opmode == MOD_CHARGE)
-    {
-        auto LIMmode=i3LIMClass::Control_Charge(RunChg);
-        // if we are in AC charge mode,have no hv request and shutdown from the lim then end chg mode
-        if((LIMmode==i3LIMChargingState::No_Chg)&&(Param::GetInt(Param::chgtyp)==AC)&&(chargerClass::HVreq==false))
+        if (opmode == MOD_OFF)
         {
-            chargeMode = false;  //no charge mode
             Param::SetInt(Param::chgtyp,OFF);
+            auto LIMmode=i3LIMClass::Control_Charge(RunChg);
+            if(LIMmode==i3LIMChargingState::DC_Chg)   //DC charge mode
+            {
+                chargeMode = true;
+                chargeModeDC = true;   //DC charge mode
+                Param::SetInt(Param::chgtyp,DCFC);
+            }
+            if(LIMmode==i3LIMChargingState::AC_Chg)
+            {
+                chargeMode = true;   //AC charge mode
+                Param::SetInt(Param::chgtyp,AC);
+            }
 
+            if(LIMmode==i3LIMChargingState::No_Chg) chargeMode = false;  //no charge mode
         }
 
-        // if we are in DC charge mode and shutdown from the lim then end chg mode
-        if((LIMmode==i3LIMChargingState::No_Chg)&&(Param::GetInt(Param::chgtyp)==DCFC))
+        if (opmode == MOD_CHARGE)
         {
-            chargeMode = false;  //no charge mode
-            chargeModeDC = false;   //DC charge mode off
-            Param::SetInt(Param::chgtyp,OFF);
+            auto LIMmode=i3LIMClass::Control_Charge(RunChg);
+            // if we are in AC charge mode,have no hv request and shutdown from the lim then end chg mode
+            if((LIMmode==i3LIMChargingState::No_Chg)&&(Param::GetInt(Param::chgtyp)==AC)&&(chargerClass::HVreq==false))
+            {
+                chargeMode = false;  //no charge mode
+                Param::SetInt(Param::chgtyp,OFF);
+
+            }
+
+            // if we are in DC charge mode and shutdown from the lim then end chg mode
+            if((LIMmode==i3LIMChargingState::No_Chg)&&(Param::GetInt(Param::chgtyp)==DCFC))
+            {
+                chargeMode = false;  //no charge mode
+                chargeModeDC = false;   //DC charge mode off
+                Param::SetInt(Param::chgtyp,OFF);
+            }
         }
-
-
     }
-
-}
 
     if(targetCharger == _chgmodes::Off)
     {
@@ -265,12 +255,11 @@ static void Ms200Task(void)
 
     if(targetCharger == _chgmodes::EXT_DIGI)
     {
-   if((opmode != MOD_RUN) && (RunChg))  chargeMode = DigIo::HV_req.Get();//false; //this mode accepts a request for HV via a 12v inputfrom a charger controller e.g. Tesla Gen2/3 M3 PCS etc.
-    if(!RunChg) chargeMode = false;
+        if((opmode != MOD_RUN) && (RunChg))  chargeMode = DigIo::HV_req.Get();//false; //this mode accepts a request for HV via a 12v inputfrom a charger controller e.g. Tesla Gen2/3 M3 PCS etc.
+        if(!RunChg) chargeMode = false;
 
-    if(RunChg) DigIo::SP_out.Set();//enable charger digital line. using sp out from gs450h as not used when in charge
-    if(!RunChg) DigIo::SP_out.Clear();//disable charger digital line when requested by timer or webui.
-
+        if(RunChg) DigIo::SP_out.Set();//enable charger digital line. using sp out from gs450h as not used when in charge
+        if(!RunChg) DigIo::SP_out.Clear();//disable charger digital line when requested by timer or webui.
     }
 
     ///////////////////////////////////////
@@ -282,11 +271,11 @@ static void Ms200Task(void)
     */
     if(opmode==MOD_CHARGE)
     {
-      if(Param::GetInt(Param::udc)>=Param::GetInt(Param::Voltspnt) && Param::GetInt(Param::idc)<=Param::GetInt(Param::IdcTerm))
-      {
-        RunChg=false;//end charge
-        ChgLck=true;//set charge lockout flag
-      }
+        if(Param::GetInt(Param::udc)>=Param::GetInt(Param::Voltspnt) && Param::GetInt(Param::idc)<=Param::GetInt(Param::IdcTerm))
+        {
+            RunChg=false;//end charge
+            ChgLck=true;//set charge lockout flag
+        }
     }
     if(opmode==MOD_RUN) ChgLck=false;//reset charge lockout flag when we drive off
 
@@ -298,26 +287,18 @@ static void Ms200Task(void)
        // if(opmode!=MOD_CHARGE) DigIo::gp_out3.Clear();//Chademo relay off for testing
 
     count_one++;
-if(count_one==1)    //just a dummy routine that sweeps the pots for testing.
-{
-    pot_test++;
-    DigIo::pot1_cs.Clear();
-    DigIo::pot2_cs.Clear();
-    uint8_t dummy=spi_xfer(SPI3,pot_test);//test
-    dummy=dummy;
-    DigIo::pot1_cs.Set();
-    DigIo::pot2_cs.Set();
-    count_one=0;
+    if(count_one==1)    //just a dummy routine that sweeps the pots for testing.
+    {
+        pot_test++;
+        DigIo::pot1_cs.Clear();
+        DigIo::pot2_cs.Clear();
+        uint8_t dummy=spi_xfer(SPI3,pot_test);//test
+        dummy=dummy;
+        DigIo::pot1_cs.Set();
+        DigIo::pot2_cs.Set();
+        count_one=0;
+    }
 }
-
-
-
-}
-
-
-
-
-
 
 static void Ms100Task(void)
 {
@@ -332,21 +313,20 @@ static void Ms100Task(void)
     utils::CalcSOC();
 
 
-        if(targetInverter == _invmodes::OpenI)
+    if(targetInverter == _invmodes::OpenI)
     {
-      if (opmode == MOD_RUN) Can_OI::Send100msMessages();
-
+        if (opmode == MOD_RUN) Can_OI::Send100msMessages();
     }
 
     if(targetChgint == _interface::Leaf_PDM) //Leaf Gen2 PDM charger/DCDC/Chademo
     {
         if (opmode == MOD_CHARGE)
-            {
-               LeafINV::Send100msMessages();//send leaf 100ms msgs if we are using the pdm and in charge mode
-            }
+        {
+           LeafINV::Send100msMessages();//send leaf 100ms msgs if we are using the pdm and in charge mode
+        }
     }
 
-        if(targetChgint == _interface::i3LIM) //BMW i3 LIM
+    if(targetChgint == _interface::i3LIM) //BMW i3 LIM
     {
         i3LIMClass::Send100msMessages();
     }
@@ -358,7 +338,7 @@ static void Ms100Task(void)
         Param::SetInt(Param::INVudc,gs450Inverter.dc_bus_voltage);//display inverter derived dc link voltage on web interface
     }
 
-  else if (targetInverter == _invmodes::GS450H)
+    else if (targetInverter == _invmodes::GS450H)
     {
         gs450Inverter.SetGS450H();//select gs450h inverter mode
         gs450Inverter.run100msTask(Lexus_Gear, Lexus_Oil);
@@ -368,7 +348,6 @@ static void Ms100Task(void)
     {
         gs450Inverter.setTimerState(false);
     }
-
 
     if (targetInverter == _invmodes::Leaf_Gen1)
     {
@@ -380,7 +359,7 @@ static void Ms100Task(void)
         Param::SetInt(Param::INVudc,(LeafINV::voltage/2));//display inverter derived dc link voltage on web interface
     }
 
-        if (targetInverter == _invmodes::OpenI)
+    if (targetInverter == _invmodes::OpenI)
     {
         Param::SetInt(Param::tmphs,Can_OI::inv_temp);//send leaf temps to web interface
         Param::SetInt(Param::tmpm,Can_OI::motor_temp);
@@ -407,11 +386,10 @@ static void Ms100Task(void)
 
     if(targetVehicle != _vehmodes::BMW_E65) //if not E65 then T15 via digital input.
     {
-      Param::SetInt(Param::T15Stat,DigIo::t15_digi.Get());
+        Param::SetInt(Param::T15Stat,DigIo::t15_digi.Get());
     }
 
     if(targetVehicle==VAG) Can_VAG::SendVAG100msMessage();
-
 
     if (!chargeMode && rtc_get_counter_val() > 100)
     {
@@ -426,15 +404,12 @@ static void Ms100Task(void)
     if(targetChgint == _interface::Chademo) //Chademo on CAN3
     {
         if(!DigIo::gp_12Vin.Get()) RunChaDeMo(); //if we detect chademo plug inserted off we go ...
-
-
     }
 
-if(targetChgint != _interface::Chademo) //If we are not using Chademo then gp in can be used as a cabin heater request from the vehicle
-{
-    Param::SetInt(Param::HeatReq,DigIo::gp_12Vin.Get());
-}
-
+    if(targetChgint != _interface::Chademo) //If we are not using Chademo then gp in can be used as a cabin heater request from the vehicle
+    {
+        Param::SetInt(Param::HeatReq,DigIo::gp_12Vin.Get());
+    }
 }
 
 
@@ -449,15 +424,13 @@ static void Ms10Task(void)
     ErrorMessage::SetTime(rtc_get_counter_val());
 
 
-        if(targetChgint == _interface::Leaf_PDM) //Leaf Gen2 PDM charger/DCDC/Chademo
-            {
-
-            if (opmode == MOD_CHARGE)
-                {
-               LeafINV::Send10msMessages();//send leaf 10ms msgs if we are using the pdm and in charge mode
-                }
-
-            }
+    if(targetChgint == _interface::Leaf_PDM) //Leaf Gen2 PDM charger/DCDC/Chademo
+    {
+        if (opmode == MOD_CHARGE)
+        {
+            LeafINV::Send10msMessages();//send leaf 10ms msgs if we are using the pdm and in charge mode
+        }
+    }
 
     if(targetChgint == _interface::i3LIM) //BMW i3 LIM
     {
@@ -478,17 +451,15 @@ static void Ms10Task(void)
 
     if (opmode != MOD_OFF)  //send leaf messages only when not in off mode.
     {
+        if(targetInverter == _invmodes::Leaf_Gen1)
+        {
+            LeafINV::Send10msMessages();//send leaf messages on can1 if we select leaf
+            speed = ABS(LeafINV::speed/2);//set motor rpm on interface
+            torquePercent = utils::change(torquePercent, 0, 3040, 0, 2047); //map throttle for Leaf inverter
+            LeafINV::SetTorque(Param::Get(Param::dir),torquePercent);//send direction and torque request to inverter
 
-    if(targetInverter == _invmodes::Leaf_Gen1)
-    {
-        LeafINV::Send10msMessages();//send leaf messages on can1 if we select leaf
-        speed = ABS(LeafINV::speed/2);//set motor rpm on interface
-        torquePercent = utils::change(torquePercent, 0, 3040, 0, 2047); //map throttle for Leaf inverter
-        LeafINV::SetTorque(Param::Get(Param::dir),torquePercent);//send direction and torque request to inverter
-
+        }
     }
-
-     }
 
     if(targetInverter == _invmodes::GS450H)
     {
@@ -496,13 +467,13 @@ static void Ms10Task(void)
         speed = GS450HClass::mg2_speed;//return MG2 rpm as speed param
     }
 
-       if(targetInverter == _invmodes::Prius_Gen3)
+    if(targetInverter == _invmodes::Prius_Gen3)
     {
         gs450Inverter.setTorqueTarget(torquePercent);//map throttle for GS450HClass inverter
         speed = GS450HClass::mg2_speed;//return MG2 rpm as speed param
     }
 
-            if(targetInverter == _invmodes::OpenI)
+    if(targetInverter == _invmodes::OpenI)
     {
         torquePercent = utils::change(torquePercent, 0, 3040, 0, 1000); //map throttle for OI
         Can_OI::SetThrottle(Param::Get(Param::dir),torquePercent);//send direction and torque request to inverter
@@ -540,7 +511,7 @@ static void Ms10Task(void)
         Can_VAG::SendVAG10msMessage(Param::GetInt(Param::speed));
     }
 
-       else if (targetVehicle == VAG)
+    else if (targetVehicle == VAG)
     {
         Can_VAG::SendVAG10msMessage(Param::GetInt(Param::speed));
     }
@@ -553,14 +524,14 @@ static void Ms10Task(void)
     stt |= udc >= Param::Get(Param::udcsw) ? STAT_NONE : STAT_UDCBELOWUDCSW;
     stt |= udc < Param::Get(Param::udclim) ? STAT_NONE : STAT_UDCLIM;
 
-
     if (opmode==MOD_OFF && (Param::GetBool(Param::din_start) || E65Vehicle.getTerminal15() || chargeMode))//on detection of ign on or charge mode enable we commence prechage and go to mode precharge
     {
-      if(chargeMode==false)
-      {
-          //activate inv during precharge if not oi.
-      if(targetInverter != _invmodes::OpenI) DigIo::inv_out.Set();//inverter power on but not if we are in charge mode!
-      }
+        if(chargeMode==false)
+        {
+            //activate inv during precharge if not oi.
+            if(targetInverter != _invmodes::OpenI) DigIo::inv_out.Set();//inverter power on but not if we are in charge mode!
+        }
+
         DigIo::gp_out2.Set();//Negative contactors on
         DigIo::gp_out1.Set();//Coolant pump on
         DigIo::prec_out.Set();//commence precharge
@@ -569,11 +540,8 @@ static void Ms10Task(void)
         oldTime=rtc_get_counter_val();
     }
 
-
-
     if(targetVehicle == _vehmodes::BMW_E65)
     {
-
         if(opmode==MOD_PCHFAIL && E65Vehicle.getTerminal15()==false)//use T15 status to reset
         {
             opmode = MOD_OFF;
@@ -589,13 +557,11 @@ static void Ms10Task(void)
         }
     }
 
-
-
-        if(opmode==MOD_PCHFAIL && chargeMode)
-        {
-        //    opmode = MOD_OFF;
-        //    Param::SetInt(Param::opmode, opmode);
-        }
+    if(opmode==MOD_PCHFAIL && chargeMode)
+    {
+    //    opmode = MOD_OFF;
+    //    Param::SetInt(Param::opmode, opmode);
+    }
 
 
     /* switch on DC switch if
@@ -606,17 +572,15 @@ static void Ms10Task(void)
      */
     if ((stt & (STAT_POTPRESSED | STAT_UDCBELOWUDCSW | STAT_UDCLIM)) == STAT_NONE)
     {
-
         if (Param::GetBool(Param::din_start) || E65Vehicle.getTerminal15())
         {
             newMode = MOD_RUN;
         }
 
-         if (chargeMode)
+        if (chargeMode)
         {
             newMode = MOD_CHARGE;
         }
-
 
         stt |= opmode != MOD_OFF ? STAT_NONE : STAT_WAITSTART;
     }
@@ -625,19 +589,19 @@ static void Ms10Task(void)
 
     if(opmode == MOD_RUN) //only shut off via ign command if not in charge mode
     {
-    if(targetInverter == _invmodes::OpenI) DigIo::inv_out.Set();//inverter power on in run only if openi.
-    if(targetVehicle == _vehmodes::BMW_E65)
-    {
-        if(!E65Vehicle.getTerminal15()) opmode = MOD_OFF; //switch to off mode via CAS command in an E65
-    }
-    else
-    {
-        //switch to off mode via igntition digital input.
-        if(!Param::GetBool(Param::T15Stat)) opmode = MOD_OFF;
-    }
+        if(targetInverter == _invmodes::OpenI) DigIo::inv_out.Set();//inverter power on in run only if openi.
+        if(targetVehicle == _vehmodes::BMW_E65)
+        {
+            if(!E65Vehicle.getTerminal15()) opmode = MOD_OFF; //switch to off mode via CAS command in an E65
+        }
+        else
+        {
+            //switch to off mode via igntition digital input.
+            if(!Param::GetBool(Param::T15Stat)) opmode = MOD_OFF;
+        }
     }
 
-  if(opmode == MOD_CHARGE && !chargeMode) opmode = MOD_OFF; //if we are in charge mode and commdn charge mode off then go to mode off.
+    if(opmode == MOD_CHARGE && !chargeMode) opmode = MOD_OFF; //if we are in charge mode and commdn charge mode off then go to mode off.
 
     if (newMode != MOD_OFF)
     {
@@ -645,9 +609,7 @@ static void Ms10Task(void)
 //        DigIo::err_out.Clear();
         Param::SetInt(Param::opmode, newMode);
         ErrorMessage::UnpostAll();
-
     }
-
 
     if (opmode == MOD_OFF)
     {
@@ -661,30 +623,25 @@ static void Ms10Task(void)
         if(targetVehicle == _vehmodes::BMW_E65) E65Vehicle.DashOff();
     }
 
-      //Cabin heat control
+    //Cabin heat control
     if((CabHeater_ctrl==1)&& (CabHeater==1)&&(opmode==MOD_RUN))//If we have selected an ampera heater are in run mode and heater not diabled...
     {
         DigIo::gp_out3.Set();//Heater enable and coolant pump on
 
-      if(Ampera_Not_Awake)
-      {
-         AmperaHeater::sendWakeup();
-         Ampera_Not_Awake=false;
-      }
+        if(Ampera_Not_Awake)
+        {
+             AmperaHeater::sendWakeup();
+             Ampera_Not_Awake=false;
+        }
         //gp in used as heat request from car (E46 in case of testing). May be poss via CAN also...
         if(!Ampera_Not_Awake) AmperaHeater::controlPower(Param::GetInt(Param::HeatPwr),Param::GetBool(Param::HeatReq));
-
-    };
+    }
 
     if(CabHeater_ctrl==0 || opmode!=MOD_RUN)
     {
         DigIo::gp_out3.Clear();//Heater enable and coolant pump off
         Ampera_Not_Awake=true;
     }
-
-
-
-
 }
 
 
@@ -698,7 +655,7 @@ static void Ms1Task(void)
         gs450Inverter.UpdateHTMState1Ms(Param::Get(Param::dir));
     }
 
-        if(targetInverter == _invmodes::Prius_Gen3)
+    if(targetInverter == _invmodes::Prius_Gen3)
     {
         // Send direction from this context.
         // Torque updated in 10ms loop.
@@ -740,13 +697,13 @@ extern void parm_Change(Param::PARAM_NUM paramNum)
     CabHeater_ctrl=Param::GetInt(Param::Control);//get cabin heater control mode
     if(ChgSet==1)
     {
-    seconds=Param::GetInt(Param::Set_Sec);//only update these params if charge command is set to disable
-    minutes=Param::GetInt(Param::Set_Min);
-    hours=Param::GetInt(Param::Set_Hour);
-    days=Param::GetInt(Param::Set_Day);
-    ChgHrs_tmp=GetInt(Param::Chg_Hrs);
-    ChgMins_tmp=GetInt(Param::Chg_Min);
-    ChgDur_tmp=GetInt(Param::Chg_Dur);
+        seconds=Param::GetInt(Param::Set_Sec);//only update these params if charge command is set to disable
+        minutes=Param::GetInt(Param::Set_Min);
+        hours=Param::GetInt(Param::Set_Hour);
+        days=Param::GetInt(Param::Set_Day);
+        ChgHrs_tmp=GetInt(Param::Chg_Hrs);
+        ChgMins_tmp=GetInt(Param::Chg_Min);
+        ChgDur_tmp=GetInt(Param::Chg_Dur);
     }
     ChgSet = Param::GetInt(Param::Chgctrl);//0=enable,1=disable,2=timer.
     ChgTicks = (GetInt(Param::Chg_Dur)*300);//number of 200ms ticks that equates to charge timer in minutes
@@ -850,7 +807,7 @@ extern "C" void tim3_isr(void)
 extern "C" void exti15_10_isr(void)    //CAN3 MCP25625 interruppt
 {
     uint32_t canData[2];
-   if(CANSPI_receive(&rxMessage))
+    if(CANSPI_receive(&rxMessage))
     {
         canData[0]=(rxMessage.frame.data0 | rxMessage.frame.data1<<8 | rxMessage.frame.data2<<16 | rxMessage.frame.data3<<24);
         canData[1]=(rxMessage.frame.data4 | rxMessage.frame.data5<<8 | rxMessage.frame.data6<<16 | rxMessage.frame.data7<<24);
@@ -866,42 +823,42 @@ extern "C" void exti15_10_isr(void)    //CAN3 MCP25625 interruppt
 
 extern "C" void rtc_isr(void)
 {
-	/* The interrupt flag isn't cleared by hardware, we have to do it. */
-	rtc_clear_flag(RTC_SEC);    //This will fire every 10ms so we need to count to 100 to get a 1 sec tick.
+    /* The interrupt flag isn't cleared by hardware, we have to do it. */
+    rtc_clear_flag(RTC_SEC);    //This will fire every 10ms so we need to count to 100 to get a 1 sec tick.
     RTC_1Sec++;
 
-        if(RTC_1Sec==100)
+    if(RTC_1Sec==100)
+    {
+        RTC_1Sec=0;
+        if ( ++seconds >= 60 )
         {
-            RTC_1Sec=0;
-		if ( ++seconds >= 60 ) {
-			++minutes;
-			seconds -= 60;
-		}
-		if ( minutes >= 60 ) {
-			++hours;
-			minutes -= 60;
-		}
-		if ( hours >= 24 ) {
-			++days;
-			hours -= 24;
-		}
-
+            ++minutes;
+            seconds -= 60;
         }
+        if ( minutes >= 60 )
+        {
+            ++hours;
+            minutes -= 60;
+        }
+        if ( hours >= 24 )
+        {
+            ++days;
+            hours -= 24;
+        }
+    }
 }
-
-
 
 extern "C" int main(void)
 {
+    extern const TERM_CMD TermCmds[];
+
     clock_setup();
     rtc_setup();
     ConfigureVariantIO();
-   // gpio_primary_remap(AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON,AFIO_MAPR_USART3_REMAP_PARTIAL_REMAP);//remap usart 3 to PC10 and PC11 for VCU HW
+    // gpio_primary_remap(AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON,AFIO_MAPR_USART3_REMAP_PARTIAL_REMAP);//remap usart 3 to PC10 and PC11 for VCU HW
     gpio_primary_remap(AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON,AFIO_MAPR_CAN2_REMAP);//32f107
-    usart_setup();
     usart2_setup();//TOYOTA HYBRID INVERTER INTERFACE
     nvic_setup();
-    term_Init();
     parm_load();
     spi2_setup();
     spi3_setup();
@@ -909,7 +866,7 @@ extern "C" int main(void)
     DigIo::inv_out.Clear();//inverter power off during bootup
     DigIo::mcp_sby.Clear();//enable can3
 
-
+    Terminal t(USART3, TermCmds, true);
     Can c(CAN1, (Can::baudrates)Param::GetInt(Param::canspeed));//can1 Inverter / isa shunt/LIM.
     Can c2(CAN2, (Can::baudrates)Param::GetInt(Param::canspeed));//can2 vehicle side.
 
@@ -943,8 +900,8 @@ extern "C" int main(void)
 
     can = &c; // FIXME: What about CAN2?
 
-    CANSPI_Initialize();// init the MCP25625 on CAN3
-    CANSPI_ENRx_IRQ();  //init CAN3 Rx IRQ
+    //CANSPI_Initialize();// init the MCP25625 on CAN3
+    //CANSPI_ENRx_IRQ();  //init CAN3 Rx IRQ
 
     Stm32Scheduler s(TIM3); //We never exit main so it's ok to put it on stack
     scheduler = &s;
@@ -959,7 +916,8 @@ extern "C" int main(void)
     //  DigIo::prec_out.Set();//commence precharge
     Param::SetInt(Param::version, 4); //backward compatibility
 
-    term_Run();
+    while(true)
+      t.Run();
 
     return 0;
 }
