@@ -29,10 +29,10 @@ OBJDUMP		= $(PREFIX)-objdump
 MKDIR_P     = mkdir -p
 TERMINAL_DEBUG ?= 0
 CFLAGS		= -Os -Wall -Wextra -Werror -Ilibopeninv/include -Iinclude/ -Ilibopencm3/include \
-             -fno-common -fno-builtin -pedantic -DSTM32F1 -DT_DEBUG=$(TERMINAL_DEBUG)  \
+             -fno-common -fno-builtin -pedantic -DSTM32F1 -DT_DEBUG=$(TERMINAL_DEBUG) -DMAX_USER_MESSAGES=20 \
 				 -mcpu=cortex-m3 -mthumb -std=gnu99 -ffunction-sections -fdata-sections -ggdb3
 CPPFLAGS    = -Os -Wall -Wextra -Werror -Ilibopeninv/include -Iinclude/ -Ilibopencm3/include \
-            -fno-common -std=c++17 -pedantic -DSTM32F1 -DT_DEBUG=$(TERMINAL_DEBUG)  \
+            -fno-common -std=c++17 -pedantic -DSTM32F1 -DT_DEBUG=$(TERMINAL_DEBUG) -DMAX_USER_MESSAGES=20 \
 		 -ffunction-sections -fdata-sections -fno-builtin -fno-rtti -fno-exceptions \
 		 -fno-unwind-tables -mcpu=cortex-m3 -mthumb -ggdb3
 LDSCRIPT	= $(BINARY).ld
@@ -60,7 +60,7 @@ all: directories images
 Debug:images
 Release: images
 cleanDebug:clean
-images: get-deps $(BINARY) 
+images: get-deps $(BINARY)
 	@printf "  OBJCOPY $(BINARY).bin\n"
 	$(Q)$(OBJCOPY) -Obinary $(BINARY) $(BINARY).bin
 	@printf "  OBJCOPY $(BINARY).hex\n"
