@@ -24,9 +24,9 @@
 
 int Throttle::potmin[2];
 int Throttle::potmax[2];
-s32fp Throttle::brknom;
+s32fp Throttle::regenTravel;
 s32fp Throttle::brknompedal;
-s32fp Throttle::brkmax;
+s32fp Throttle::regenmax;
 s32fp Throttle::brkcruise;
 int Throttle::idleSpeed;
 int Throttle::cruiseSpeed;
@@ -97,7 +97,7 @@ bool Throttle::CheckDualThrottle(int* potval, int pot2val)
 s32fp Throttle::CalcThrottle(int potval, int pot2val, bool brkpedal)
 {
     s32fp potnom;
-    s32fp scaledBrkMax = brkpedal ? brknompedal : brkmax;
+    s32fp scaledBrkMax = brkpedal ? brknompedal : regenmax;
 
     if (pot2val >= potmin[1])
     {
@@ -113,12 +113,12 @@ s32fp Throttle::CalcThrottle(int potval, int pot2val, bool brkpedal)
     else
     {
         potnom = FP_FROMINT(potval - potmin[0]);
-        potnom = FP_MUL((FP_FROMINT(100) + brknom), potnom) / (potmax[0] - potmin[0]);
-        potnom -= brknom;
+        potnom = FP_MUL((FP_FROMINT(100) + regenTravel), potnom) / (potmax[0] - potmin[0]);
+        potnom -= regenTravel;
 
         if (potnom < 0)
         {
-            potnom = -FP_DIV(FP_MUL(potnom, scaledBrkMax), brknom);
+            potnom = -FP_DIV(FP_MUL(potnom, scaledBrkMax), regenTravel);
         }
     }
 

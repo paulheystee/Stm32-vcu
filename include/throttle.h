@@ -39,9 +39,9 @@ public:
     static s32fp RampThrottle(s32fp finalSpnt);
     static int potmin[2];
     static int potmax[2];
-    static s32fp brknom;
+    static s32fp regenTravel;
     static s32fp brknompedal;
-    static s32fp brkmax;
+    static s32fp regenmax;
     static s32fp brkcruise;
     static s32fp throtmax;
     static s32fp throtmin;
