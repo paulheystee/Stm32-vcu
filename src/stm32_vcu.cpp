@@ -41,7 +41,6 @@ static _chgmodes targetCharger;
 static _interface targetChgint;
 static uint8_t Lexus_Gear;
 static uint16_t Lexus_Oil;
-static uint16_t maxRevs;
 static uint32_t oldTime;
 uint8_t pot_test;
 uint8_t count_one=0;
@@ -421,14 +420,14 @@ static void Ms100Task(void)
 
 static void Ms10Task(void)
 {
-   int16_t previousSpeed=Param::GetInt(Param::speed);
-   int16_t speed = 0;
+   int previousSpeed = Param::GetInt(Param::speed);
+   int speed = 0;
    s32fp torquePercent;
    int opmode = Param::GetInt(Param::opmode);
    int newMode = MOD_OFF;
    int stt = STAT_NONE;
+   int requestedDirection = Param::GetInt(Param::dir);
    ErrorMessage::SetTime(rtc_get_counter_val());
-
 
    if(targetChgint == _interface::Leaf_PDM) //Leaf Gen2 PDM charger/DCDC/Chademo
    {
@@ -445,9 +444,21 @@ static void Ms10Task(void)
 
    if (Param::GetInt(Param::opmode) == MOD_RUN)
    {
-      //TODO: use Throttle::FrequencyLimitCommand instead
       torquePercent = utils::ProcessThrottle(previousSpeed);
-      if(ABS(previousSpeed)>=maxRevs) torquePercent=0;//Hard cut limiter:)
+
+      //When requesting regen we need to be careful. If the car is not rolling
+      //in the same direction as the selected gear, we will actually accelerate!
+      if (torquePercent < 0)
+      {
+         int rollingDirection = speed >= 0 ? 1 : -1;
+
+         //When rolling backward while in forward gear, apply POSITIVE torque to slow down backward motion
+         //Vice versa when in reverse gear and rolling forward.
+         if (rollingDirection != requestedDirection)
+         {
+            requestedDirection = -requestedDirection;
+         }
+      }
    }
    else
    {
@@ -462,8 +473,7 @@ static void Ms10Task(void)
          LeafINV::Send10msMessages();//send leaf messages on can1 if we select leaf
          speed = ABS(LeafINV::speed/2);//set motor rpm on interface
          torquePercent = utils::change(torquePercent, 0, 3040, 0, 2047); //map throttle for Leaf inverter
-         LeafINV::SetTorque(Param::Get(Param::dir),torquePercent);//send direction and torque request to inverter
-
+         LeafINV::SetTorque(requestedDirection,torquePercent);//send direction and torque request to inverter
       }
    }
 
@@ -482,7 +492,7 @@ static void Ms10Task(void)
    if(targetInverter == _invmodes::OpenI)
    {
       torquePercent = utils::change(torquePercent, 0, 3040, 0, 1000); //map throttle for OI
-      Can_OI::SetThrottle(Param::Get(Param::dir),torquePercent);//send direction and torque request to inverter
+      Can_OI::SetThrottle(requestedDirection,torquePercent);//send direction and torque request to inverter
       speed = ABS(Can_OI::speed);//set motor rpm on interface
    }
 
@@ -686,6 +696,7 @@ extern void parm_Change(Param::PARAM_NUM paramNum)
    Throttle::idcmin = Param::Get(Param::idcmin);
    Throttle::idcmax = Param::Get(Param::idcmax);
    Throttle::udcmin = FP_MUL(Param::Get(Param::udcmin), FP_FROMFLT(0.95)); //Leave some room for the notification light
+   Throttle::speedLimit = Param::GetInt(Param::revlim);
    targetInverter = static_cast<_invmodes>(Param::GetInt(Param::Inverter));//get inverter setting from menu
    Param::SetInt(Param::inv, targetInverter);//Confirm mode
    targetVehicle=static_cast<_vehmodes>(Param::GetInt(Param::Vehicle));//get vehicle setting from menu
@@ -695,7 +706,6 @@ extern void parm_Change(Param::PARAM_NUM paramNum)
    Param::SetInt(Param::Charger, targetCharger);//Confirm mode
    Lexus_Gear=Param::GetInt(Param::GEAR);//get gear selection from Menu
    Lexus_Oil=Param::GetInt(Param::OilPump);//get oil pump duty % selection from Menu
-   maxRevs=Param::GetInt(Param::revlim);//get revlimiter value
    CabHeater=Param::GetInt(Param::Heater);//get cabin heater type
    CabHeater_ctrl=Param::GetInt(Param::Control);//get cabin heater control mode
    if(ChgSet==1)
