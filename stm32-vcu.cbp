@@ -16,7 +16,7 @@
 		</MakeCommands>
 		<Build>
 			<Target title="STM32F107">
-				<Option output="stm32_sine" prefix_auto="0" extension_auto="0" />
+				<Option output="stm32_vcu" prefix_auto="0" extension_auto="0" />
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="armelfgcc" />
@@ -64,6 +64,7 @@
 		<Unit filename="include/hwdefs.h" />
 		<Unit filename="include/hwinit.h" />
 		<Unit filename="include/i3LIM.h" />
+		<Unit filename="include/inverter.h" />
 		<Unit filename="include/isa_shunt.h" />
 		<Unit filename="include/leafinv.h" />
 		<Unit filename="include/param_prj.h" />
@@ -152,7 +153,7 @@
 				<general />
 			</DoxyBlocks>
 			<debugger>
-				<remote_debugging target="STM32F103">
+				<remote_debugging>
 					<options conn_type="0" ip_address="localhost" ip_port="3333" additional_cmds="load&#x0A;r" />
 				</remote_debugging>
 			</debugger>

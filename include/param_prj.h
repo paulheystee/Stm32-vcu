@@ -34,7 +34,7 @@
     PARAM_ENTRY(CAT_THROTTLE,  pot2min,     "dig",     0,      4095,   4095,   9  ) \
     PARAM_ENTRY(CAT_THROTTLE,  pot2max,     "dig",     0,      4095,   4095,   10  ) \
     PARAM_ENTRY(CAT_THROTTLE,  regentravel, "%",       0,      100,    30,     60  ) \
-    PARAM_ENTRY(CAT_THROTTLE,  regenmax,    "%",       0,      100,    30,     61  ) \
+    PARAM_ENTRY(CAT_THROTTLE,  regenmax,    "%",       -100,   0,     -30,     61  ) \
     PARAM_ENTRY(CAT_THROTTLE,  potmode,     POTMODES,  0,      1,      0,      11  ) \
     PARAM_ENTRY(CAT_THROTTLE,  dirmode,     DIRMODES,  0,      4,      1,      12  ) \
     PARAM_ENTRY(CAT_THROTTLE,  throtramp,   "%/10ms",  0.1,    100,    100,    13  ) \
@@ -51,7 +51,7 @@
     PARAM_ENTRY(CAT_THROTTLE,  tmpmmax,     "°C",      70,     300,   300,     24 ) \
     PARAM_ENTRY(CAT_THROTTLE,  throtmax,    "%",       0,      100,   100,     25  ) \
     PARAM_ENTRY(CAT_THROTTLE,  throtmin,    "%",       -100,   0,     -100,    26 ) \
-    PARAM_ENTRY(CAT_LEXUS,     GEAR,        LOWHIGH,   0,      2,      0,      27  ) \
+    PARAM_ENTRY(CAT_LEXUS,     Gear,        LOWHIGH,   0,      2,      0,      27  ) \
     PARAM_ENTRY(CAT_LEXUS,     OilPump,     "%",       0,      100,    50,     28  ) \
     PARAM_ENTRY(CAT_CRUISE,    cruisestep,  "rpm",     1,      1000,   200,    29   ) \
     PARAM_ENTRY(CAT_CRUISE,    cruiseramp,  "rpm/100ms",1,     1000,   20,     30  ) \
@@ -174,7 +174,7 @@
 #define CCS_STATUS   "0=NotRdy, 1=ready, 2=SWoff, 3=interruption, 4=Prech, 5=insulmon, 6=estop, 7=malfunction, 15=invalid"
 #define DIRS         "-1=Reverse, 0=Neutral, 1=Forward"
 #define ONOFF        "0=Off, 1=On, 2=na"
-#define LOWHIGH        "0=LOW, 1=HIGH, 2=AUTO"
+#define LOWHIGH      "0=LOW, 1=HIGH, 2=AUTO"
 #define OKERR        "0=Error, 1=Ok, 2=na"
 #define CANSPEEDS    "0=250k, 1=500k, 2=800k, 3=1M"
 #define CANIOS       "1=Cruise, 2=Start, 4=Brake, 8=Fwd, 16=Rev, 32=Bms"
@@ -244,7 +244,7 @@ enum _dirmodes
     DIR_DEFAULTFORWARD = 4
 };
 
-enum _invmodes
+enum InvModes
 {
     Leaf_Gen1 = 0,
     GS450H = 1,

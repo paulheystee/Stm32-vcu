@@ -36,12 +36,12 @@ void GetDigInputs(Can* can)
         ErrorMessage::Post(ERR_CANTIMEOUT);
     }
 
-    Param::SetInt(Param::din_cruise, DigIo::cruise_in.Get() | ((canio & CAN_IO_CRUISE) != 0));
-    Param::SetInt(Param::din_start, DigIo::start_in.Get() | ((canio & CAN_IO_START) != 0));
-    Param::SetInt(Param::din_brake, DigIo::brake_in.Get() | ((canio & CAN_IO_BRAKE) != 0));
-    Param::SetInt(Param::din_forward, DigIo::fwd_in.Get() | ((canio & CAN_IO_FWD) != 0));
-    Param::SetInt(Param::din_reverse, DigIo::rev_in.Get() | ((canio & CAN_IO_REV) != 0));
-    Param::SetInt(Param::din_bms, (canio & CAN_IO_BMS) != 0 || (DigIo::bms_in.Get()) );
+    Param::SetInt(Param::din_cruise, DigIo::cruise_in.Get() || ((canio & CAN_IO_CRUISE) != 0));
+    Param::SetInt(Param::din_start, DigIo::start_in.Get() || ((canio & CAN_IO_START) != 0));
+    Param::SetInt(Param::din_brake, DigIo::brake_in.Get() || ((canio & CAN_IO_BRAKE) != 0));
+    Param::SetInt(Param::din_forward, DigIo::fwd_in.Get() || ((canio & CAN_IO_FWD) != 0));
+    Param::SetInt(Param::din_reverse, DigIo::rev_in.Get() || ((canio & CAN_IO_REV) != 0));
+    Param::SetInt(Param::din_bms, (DigIo::bms_in.Get() || (canio & CAN_IO_BMS) != 0);
 }
 
 int GetUserThrottleCommand()
@@ -160,26 +160,26 @@ void SelectDirection(_vehmodes targetVehicle, BMW_E65Class E65Vehicle)
 s32fp ProcessUdc(uint32_t oldTime, int motorSpeed)
 {
     // FIXME: 32bit integer?
-    int32_t udc = FP_FROMINT(ISA::Voltage)/1000;//get voltage from isa sensor and post to parameter database
-    Param::SetFlt(Param::udc, udc);
-    int32_t udc2 = FP_FROMINT(ISA::Voltage2)/1000;//get voltage from isa sensor and post to parameter database
-    Param::SetFlt(Param::udc2, udc2);
-    int32_t udc3 = FP_FROMINT(ISA::Voltage3)/1000;//get voltage from isa sensor and post to parameter database
-    Param::SetFlt(Param::udc3, udc3);
-    int32_t idc = FP_FROMINT(ISA::Amperes)/1000;//get current from isa sensor and post to parameter database
-    Param::SetFlt(Param::idc, idc);
-    int32_t kw = FP_FROMINT(ISA::KW)/1000;//get power from isa sensor and post to parameter database
-    Param::SetFlt(Param::power, kw);
-    int32_t kwh = FP_FROMINT(ISA::KWh)/1000;//get kwh from isa sensor and post to parameter database
-    Param::SetFlt(Param::KWh, kwh);
-    int32_t Amph = FP_FROMINT(ISA::Ah)/3600;//get Ah from isa sensor and post to parameter database
-    Param::SetFlt(Param::AMPh, Amph);
+    float udc = ((float)ISA::Voltage)/1000;//get voltage from isa sensor and post to parameter database
+    Param::SetFloat(Param::udc, udc);
+    int32_t udc2 = ((float)ISA::Voltage2)/1000;//get voltage from isa sensor and post to parameter database
+    Param::SetFloat(Param::udc2, udc2);
+    int32_t udc3 = ((float)ISA::Voltage3)/1000;//get voltage from isa sensor and post to parameter database
+    Param::SetFloat(Param::udc3, udc3);
+    int32_t idc = ((float)ISA::Amperes)/1000;//get current from isa sensor and post to parameter database
+    Param::SetFloat(Param::idc, idc);
+    int32_t kw = ((float)ISA::KW)/1000;//get power from isa sensor and post to parameter database
+    Param::SetFloat(Param::power, kw);
+    int32_t kwh = ((float)ISA::KWh)/1000;//get kwh from isa sensor and post to parameter database
+    Param::SetFloat(Param::KWh, kwh);
+    int32_t Amph = ((float)ISA::Ah)/3600;//get Ah from isa sensor and post to parameter database
+    Param::SetFloat(Param::AMPh, Amph);
     s32fp udclim = Param::Get(Param::udclim);
     s32fp udcsw = Param::Get(Param::udcsw);
 
-    s32fp deltaVolts1 = ABS((udc3/2)-udc2);
-    s32fp deltaVolts2 = ABS((udc2+udc3)-udc);
-    Param::SetFlt(Param::deltaV, MAX(deltaVolts1, deltaVolts2));
+    float deltaVolts1 = ABS((udc3/2)-udc2);
+    float deltaVolts2 = ABS((udc2+udc3)-udc);
+    Param::SetFloat(Param::deltaV, MAX(deltaVolts1, deltaVolts2));
 
     // Currently unused parameters:
     // s32fp udcmin = Param::Get(Param::udcmin);
@@ -190,7 +190,7 @@ s32fp ProcessUdc(uint32_t oldTime, int motorSpeed)
     //1.2/(4.7+1.2)/3.33*4095 = 250 -> make it a bit less for pin losses etc
     //HW_REV1 had 3.9k resistors
     int uauxGain = 289;
-    Param::SetFlt(Param::uaux, FP_DIV(AnaIn::uaux.Get(), uauxGain));
+    Param::SetFloat(Param::uaux, ((float)AnaIn::uaux.Get()) / uauxGain);
     udc = Param::Get(Param::udc);
     s32fp  udcfp = udc;
 
@@ -252,8 +252,6 @@ s32fp ProcessThrottle(int speed)
 //        DigIo::err_out.Set();
         ErrorMessage::Post(ERR_TMPMMAX);
     }
-
-    Param::SetFlt(Param::potnom, finalSpnt);
 
     if (finalSpnt < Param::Get(Param::brkout))
         DigIo::brk_out.Set();

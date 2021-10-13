@@ -23,19 +23,8 @@
 #include "my_math.h"
 #include "stm32_can.h"
 #include "params.h"
+#include "utils.h"
 
-
-
-
-uint8_t LeafINV::run10ms = 0;
-uint8_t LeafINV::run100ms = 0;
-uint32_t LeafINV::lastRecv = 0;
-uint16_t LeafINV::voltage;
-int16_t LeafINV::speed;
-bool LeafINV::error=false;
-int16_t LeafINV::inv_temp;
-int16_t LeafINV::motor_temp;
-int16_t LeafINV::final_torque_request;
 static uint16_t Vbatt=0;
 static uint16_t VbattSP=0;
 static uint8_t counter_1db=0;
@@ -87,18 +76,14 @@ void LeafINV::DecodeCAN(int id, uint32_t data[2])
    }
 }
 
-
-
-void LeafINV::SetTorque(int8_t gear, int16_t torque)
+void LeafINV::SetTorque(float torquePercent)
 {
-   if(gear == 0) final_torque_request=0;//Neutral
-   if(gear > 0) final_torque_request=torque;//Drive
-   if(gear < 0) final_torque_request=torque*-1;;//Reverse
+   final_torque_request = (torquePercent * 2047) / 100.0f;
 
    Param::SetInt(Param::torque,final_torque_request);//post processed final torque value sent to inv to web interface
 }
 
-void LeafINV::Send10msMessages()
+void LeafINV::Task10Ms()
 {
    int opmode = Param::GetInt(Param::opmode);
 
@@ -441,7 +426,7 @@ void LeafINV::Send10msMessages()
 
 }
 
-void LeafINV::Send100msMessages()
+void LeafINV::Task100Ms()
 {
    //MSGS for charging with pdm
    uint8_t bytes[8];
