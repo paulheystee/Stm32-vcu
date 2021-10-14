@@ -20,15 +20,6 @@
  */
 #include "stm32_vcu.h"
 
-#define  UserCAN  2
-#define  BMW_E46  0
-#define  User  2
-#define  None  4
-//#define  BMW_E39  5
-#define  VAG  6
-
-
-
 HWREV hwRev; // Hardware variant of board we are running on
 static Stm32Scheduler* scheduler;
 static bool chargeMode = false;
@@ -40,31 +31,26 @@ static _vehmodes targetVehicle;
 static _chgmodes targetCharger;
 static _interface targetChgint;
 static uint32_t oldTime;
-uint8_t pot_test;
-uint8_t count_one=0;
-uint8_t ChgSet;
-bool RunChg;
-bool Ampera_Not_Awake=true;
-uint8_t ChgHrs_tmp;
-uint8_t ChgMins_tmp;
-uint16_t ChgDur_tmp;
-uint8_t RTC_1Sec=0;
-uint32_t ChgTicks=0,ChgTicks_1Min=0;
-uint8_t CabHeater,CabHeater_ctrl;
-
-
-static volatile unsigned
+static uint8_t pot_test;
+static uint8_t count_one=0;
+static uint8_t ChgSet;
+static bool RunChg;
+static bool Ampera_Not_Awake=true;
+static uint8_t ChgHrs_tmp;
+static uint8_t ChgMins_tmp;
+static uint16_t ChgDur_tmp;
+static uint8_t RTC_1Sec=0;
+static uint32_t ChgTicks=0,ChgTicks_1Min=0;
+static uint8_t CabHeater,CabHeater_ctrl;
+static volatile uint32_t
 days=0,
 hours=0, minutes=0, seconds=0,
 alarm=0;			// != 0 when alarm is pending
 
 // Instantiate Classes
-BMW_E65Class E65Vehicle;
-GS450HClass gs450Inverter;
-chargerClass chgtype;
-//uCAN_MSG txMessage;
-uCAN_MSG rxMessage;
-CAN3_Msg CAN3;
+static BMW_E65Class E65Vehicle;
+static GS450HClass gs450Inverter;
+static uCAN_MSG rxMessage;
 static LeafINV leafInv;
 static Can_OI openInv;
 static Inverter* selectedInverter = &openInv;
