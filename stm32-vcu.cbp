@@ -124,24 +124,6 @@
 		<Unit filename="test/Makefile">
 			<Option target="Test" />
 		</Unit>
-		<Unit filename="test/test.h">
-			<Option target="Test" />
-		</Unit>
-		<Unit filename="test/test_fp.cpp">
-			<Option target="Test" />
-		</Unit>
-		<Unit filename="test/test_fu.cpp">
-			<Option target="Test" />
-		</Unit>
-		<Unit filename="test/test_list.h">
-			<Option target="Test" />
-		</Unit>
-		<Unit filename="test/test_main.cpp">
-			<Option target="Test" />
-		</Unit>
-		<Unit filename="test/test_throttle.cpp">
-			<Option target="Test" />
-		</Unit>
 		<Extensions>
 			<DoxyBlocks>
 				<comment_style block="0" line="0" />
