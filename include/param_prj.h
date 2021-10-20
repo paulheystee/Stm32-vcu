@@ -24,7 +24,7 @@
    2. Temporary parameters (id = 0)
    3. Display values
  */
-//Next param id (increase when adding new parameter!): 62
+//Next param id (increase when adding new parameter!): 63
 /*              category     name         unit       min     max     default id */
 #define PARAM_LIST \
     PARAM_ENTRY(CAT_SETUP,     Inverter,     INVMODES, 0,      5,      0,      5  ) \
@@ -43,7 +43,8 @@
     PARAM_ENTRY(CAT_THROTTLE,  brkout,      "%",       -100,   -1,     -50,    16  ) \
     PARAM_ENTRY(CAT_THROTTLE,  bmslimhigh,  "%",       0,      100,    50,     17  ) \
     PARAM_ENTRY(CAT_THROTTLE,  bmslimlow,   "%",       -100,   0,      -1,     18  ) \
-    PARAM_ENTRY(CAT_THROTTLE,  udcmin,      "V",       0,      1000,   450,    19  ) \
+    PARAM_ENTRY(CAT_THROTTLE,  udcmin,      "V",       0,      1000,   280,    19  ) \
+    PARAM_ENTRY(CAT_THROTTLE,  udcmax,      "V",       0,      1000,   420,    62  ) \
     PARAM_ENTRY(CAT_THROTTLE,  udclim,      "V",       0,      1000,   520,    20  ) \
     PARAM_ENTRY(CAT_THROTTLE,  idcmax,      "A",       0,      5000,   5000,   21  ) \
     PARAM_ENTRY(CAT_THROTTLE,  idcmin,      "A",       -5000,  0,     -5000,   22  ) \

@@ -662,7 +662,8 @@ extern void parm_Change(Param::PARAM_NUM paramNum)
    Throttle::throtmin = Param::Get(Param::throtmin);
    Throttle::idcmin = Param::Get(Param::idcmin);
    Throttle::idcmax = Param::Get(Param::idcmax);
-   Throttle::udcmin = FP_MUL(Param::Get(Param::udcmin), FP_FROMFLT(0.95)); //Leave some room for the notification light
+   Throttle::udcmin = Param::Get(Param::udcmin); //Leave some room for the notification light
+   Throttle::udcmax = Param::Get(Param::udcmax); //Leave some room for the notification light
    Throttle::speedLimit = Param::GetInt(Param::revlim);
    Throttle::regenRamp = FP_FROMFLT(1);
    targetInverter = static_cast<InvModes>(Param::GetInt(Param::Inverter));//get inverter setting from menu
