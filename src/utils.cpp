@@ -162,17 +162,17 @@ s32fp ProcessUdc(uint32_t oldTime, int motorSpeed)
     // FIXME: 32bit integer?
     float udc = ((float)ISA::Voltage)/1000;//get voltage from isa sensor and post to parameter database
     Param::SetFloat(Param::udc, udc);
-    int32_t udc2 = ((float)ISA::Voltage2)/1000;//get voltage from isa sensor and post to parameter database
+    float udc2 = ((float)ISA::Voltage2)/1000;//get voltage from isa sensor and post to parameter database
     Param::SetFloat(Param::udc2, udc2);
-    int32_t udc3 = ((float)ISA::Voltage3)/1000;//get voltage from isa sensor and post to parameter database
+    float udc3 = ((float)ISA::Voltage3)/1000;//get voltage from isa sensor and post to parameter database
     Param::SetFloat(Param::udc3, udc3);
-    int32_t idc = ((float)ISA::Amperes)/1000;//get current from isa sensor and post to parameter database
+    float idc = ((float)ISA::Amperes)/1000;//get current from isa sensor and post to parameter database
     Param::SetFloat(Param::idc, idc);
-    int32_t kw = ((float)ISA::KW)/1000;//get power from isa sensor and post to parameter database
+    float kw = ((float)ISA::KW)/1000;//get power from isa sensor and post to parameter database
     Param::SetFloat(Param::power, kw);
-    int32_t kwh = ((float)ISA::KWh)/1000;//get kwh from isa sensor and post to parameter database
+    float kwh = ((float)ISA::KWh)/1000;//get kwh from isa sensor and post to parameter database
     Param::SetFloat(Param::KWh, kwh);
-    int32_t Amph = ((float)ISA::Ah)/3600;//get Ah from isa sensor and post to parameter database
+    float Amph = ((float)ISA::Ah)/3600;//get Ah from isa sensor and post to parameter database
     Param::SetFloat(Param::AMPh, Amph);
     s32fp udclim = Param::Get(Param::udclim);
     s32fp udcsw = Param::Get(Param::udcsw);
@@ -189,7 +189,7 @@ s32fp ProcessUdc(uint32_t oldTime, int motorSpeed)
     //Calculate "12V" supply voltage from voltage divider on mprot pin
     //1.2/(4.7+1.2)/3.33*4095 = 250 -> make it a bit less for pin losses etc
     //HW_REV1 had 3.9k resistors
-    int uauxGain = 289;
+    int uauxGain = 210;
     Param::SetFloat(Param::uaux, ((float)AnaIn::uaux.Get()) / uauxGain);
     udc = Param::Get(Param::udc);
     s32fp  udcfp = udc;
