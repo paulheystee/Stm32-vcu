@@ -47,6 +47,9 @@ days=0,
 hours=0, minutes=0, seconds=0,
 alarm=0;			// != 0 when alarm is pending
 
+static uint8_t PlugStat,OBCVoltStat;
+static bool OBCwake,PPStat=false;
+
 // Instantiate Classes
 static BMW_E65Class E65Vehicle;
 static GS450HClass gs450Inverter;
@@ -114,6 +117,29 @@ static void RunChaDeMo()
    Param::SetInt(Param::CCS_State, ChaDeMo::GetChargerStatus());
 }
 
+////////////////LEAF PDM CAN HANDLER. MIGRATE TO CHARGER CLASS WHEN TESTED//////////////////////////////////////////
+static void PDMCanHandler(uint32_t id, uint32_t data[2])
+{
+    uint8_t* bytes = (uint8_t*)data;// arrgghhh this converts the two 32bit array into bytes. See comments are useful:)
+
+    if (id == 0x679)
+    {
+        uint8_t dummyVar = bytes[0];
+        dummyVar = dummyVar;
+        OBCwake = true;             //0x679 is received once when we plug in if pdm is asleep so wake wakey...
+    }
+    else if (id == 0x390)
+    {
+        OBCVoltStat = (bytes[3] >> 3) & 0x03;
+        PlugStat = bytes[5] & 0x0F;
+        if(PlugStat == 0x08) PPStat = true; //plug inserted
+        if(PlugStat == 0x00) PPStat = false; //plug not inserted
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void Ms200Task(void)
 {
@@ -176,6 +202,24 @@ static void Ms200Task(void)
    {
       if (opmode == MOD_CHARGE || opmode == MOD_RUN)  DigIo::inv_out.Set();//inverter and PDM power on if using pdm and in chg mode or in run mode
       if (opmode == MOD_OFF)  DigIo::inv_out.Clear();//inverter and pdm off in off mode. Duh!
+
+      if(opmode != MOD_RUN)                   //only run charge logic if not in run mode.
+        {
+            if(RunChg && OBCwake)   //if charge is enabled and we have an obc wake over can
+                {
+                  chargeMode = true;   //AC charge mode
+                  Param::SetInt(Param::chgtyp,AC);
+                }
+            if(!RunChg || !PPStat)
+                {
+                   chargeMode = false;  //no charge mode
+                   OBCwake = false;
+                   Param::SetInt(Param::chgtyp,OFF);
+                }
+        }
+
+
+
    }
 
    if(targetChgint == _interface::i3LIM) //BMW i3 LIM
@@ -736,6 +780,12 @@ static void CanCallback(uint32_t id, uint32_t data[2]) //This is where we go whe
    case 0x2ef:
       i3LIMClass::handle2EF(data);// Data msg from LIM
       break;
+   case 0x679:
+      PDMCanHandler(id,data);// Data msg from Leaf PDM
+      break;
+   case 0x390:
+      PDMCanHandler(id,data);// Data msg from Leaf PDM
+      break;
 
    default:
       if (0 != selectedInverter)
@@ -864,6 +914,9 @@ extern "C" int main(void)
    c.RegisterUserMessage(0x2b2);//LIM MSG
    c.RegisterUserMessage(0x2ef);//LIM MSG
    c.RegisterUserMessage(0x272);//LIM MSG
+   c.RegisterUserMessage(0x679);//Leaf PDM Charge wake
+   c.RegisterUserMessage(0x390);//Leaf PDM Charge status
+
 
    // Set up CAN 2 (Vehicle CAN) callback and messages to listen for.
    c2.SetReceiveCallback(CanCallback);
