@@ -404,7 +404,6 @@ static void Ms10Task(void)
    if (Param::GetInt(Param::opmode) == MOD_RUN)
    {
       torquePercent = FP_TOFLOAT(utils::ProcessThrottle(previousSpeed));
-      Param::SetFloat(Param::potnom, torquePercent);
 
       //When requesting regen we need to be careful. If the car is not rolling
       //in the same direction as the selected gear, we will actually accelerate!
@@ -738,10 +737,7 @@ static void CanCallback(uint32_t id, uint32_t data[2]) //This is where we go whe
       break;
 
    default:
-      if (0 != selectedInverter)
-      {
-         selectedInverter->DecodeCAN(id, data);
-      }
+      selectedInverter->DecodeCAN(id, data);
 
       if(targetVehicle == _vehmodes::BMW_E65)
       {
@@ -826,12 +822,17 @@ extern "C" void rtc_isr(void)
 extern "C" int main(void)
 {
    extern const TERM_CMD TermCmds[];
+   bool remapCan1 = false;
 
    clock_setup();
    rtc_setup();
    ConfigureVariantIO();
-   // gpio_primary_remap(AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON,AFIO_MAPR_USART3_REMAP_PARTIAL_REMAP);//remap usart 3 to PC10 and PC11 for VCU HW
-   gpio_primary_remap(AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON,AFIO_MAPR_CAN2_REMAP);//32f107
+   #ifdef TEST_P107
+   gpio_primary_remap(AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON,AFIO_MAPR_CAN1_REMAP_PORTB|AFIO_MAPR_CAN2_REMAP);//32f107
+   remapCan1 = true;
+   #else
+   gpio_primary_remap(AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON,AFIO_MAPR_CAN2_REMAP);
+   #endif
    usart2_setup();//TOYOTA HYBRID INVERTER INTERFACE
    nvic_setup();
    parm_load();
@@ -841,7 +842,7 @@ extern "C" int main(void)
    DigIo::mcp_sby.Clear();//enable can3
 
    Terminal t(USART3, TermCmds, true);
-   Can c(CAN1, (Can::baudrates)Param::GetInt(Param::canspeed));//can1 Inverter / isa shunt/LIM.
+   Can c(CAN1, (Can::baudrates)Param::GetInt(Param::canspeed), remapCan1);//can1 Inverter / isa shunt/LIM.
    Can c2(CAN2, (Can::baudrates)Param::GetInt(Param::canspeed), true);//can2 vehicle side.
 
    // Set up CAN 1 callback and messages to listen for
@@ -874,8 +875,8 @@ extern "C" int main(void)
 
    can = &c; // FIXME: What about CAN2?
 
-   CANSPI_Initialize();// init the MCP25625 on CAN3
-   CANSPI_ENRx_IRQ();  //init CAN3 Rx IRQ
+   //CANSPI_Initialize();// init the MCP25625 on CAN3
+   //CANSPI_ENRx_IRQ();  //init CAN3 Rx IRQ
 
    Stm32Scheduler s(TIM3); //We never exit main so it's ok to put it on stack
    scheduler = &s;

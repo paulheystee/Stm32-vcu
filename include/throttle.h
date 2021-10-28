@@ -35,8 +35,9 @@ public:
     // static void BmsLimitCommand(s32fp& finalSpnt, bool dinbms);
     static void UdcLimitCommand(s32fp& finalSpnt, s32fp udc);
     static void IdcLimitCommand(s32fp& finalSpnt, s32fp idc);
-    static void SpeedLimitCommand(s32fp& finalSpnt, int frequency);
+    static void SpeedLimitCommand(s32fp& finalSpnt, int speed);
     static s32fp RampThrottle(s32fp finalSpnt);
+    static void RegenRampDown(s32fp& finalSpnt, int speed);
     static int potmin[2];
     static int potmax[2];
     static s32fp regenTravel;
