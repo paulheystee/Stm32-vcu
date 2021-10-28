@@ -261,3 +261,15 @@ void Throttle::SpeedLimitCommand(s32fp& finalSpnt, int speed)
         finalSpnt = MIN(res, finalSpnt);
     }
 }
+
+void Throttle::RegenRampDown(s32fp& finalSpnt, int speed)
+{
+   const float rampStart = 150.0f; //rpm
+   float absSpeed = ABS(speed);
+
+   if (finalSpnt < 0 && absSpeed < rampStart) //regen
+   {
+      float ratio = absSpeed / rampStart;
+      finalSpnt = finalSpnt * ratio;
+   }
+}
