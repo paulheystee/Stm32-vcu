@@ -139,7 +139,10 @@ static void PDMCanHandler(uint32_t id, uint32_t data[2])
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void Ms200Task(void)
 {
@@ -203,7 +206,11 @@ static void Ms200Task(void)
       if (opmode == MOD_CHARGE || opmode == MOD_RUN)  DigIo::inv_out.Set();//inverter and PDM power on if using pdm and in chg mode or in run mode
       if (opmode == MOD_OFF)  DigIo::inv_out.Clear();//inverter and pdm off in off mode. Duh!
 
+<<<<<<< Updated upstream
       if(opmode != MOD_RUN)                   //only run charge logic if not in run mode.
+=======
+            if(opmode != MOD_RUN)                   //only run charge logic if not in run mode.
+>>>>>>> Stashed changes
         {
             if(RunChg && OBCwake)   //if charge is enabled and we have an obc wake over can
                 {
@@ -220,9 +227,12 @@ static void Ms200Task(void)
                 }
             }
         }
+<<<<<<< Updated upstream
 
 
 
+=======
+>>>>>>> Stashed changes
    }
 
    if(targetChgint == _interface::i3LIM) //BMW i3 LIM
@@ -919,7 +929,10 @@ extern "C" int main(void)
    c.RegisterUserMessage(0x272);//LIM MSG
    c.RegisterUserMessage(0x679);//Leaf PDM Charge wake
    c.RegisterUserMessage(0x390);//Leaf PDM Charge status
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 
    // Set up CAN 2 (Vehicle CAN) callback and messages to listen for.
    c2.SetReceiveCallback(CanCallback);
