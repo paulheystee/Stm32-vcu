@@ -210,12 +210,15 @@ static void Ms200Task(void)
                   chargeMode = true;   //AC charge mode
                   Param::SetInt(Param::chgtyp,AC);
                 }
+            if (opmode == MOD_CHARGE || opmode == MOD_PRECHARGE)
+            {
             if(!RunChg || !PPStat)
                 {
                    chargeMode = false;  //no charge mode
                    OBCwake = false;
                    Param::SetInt(Param::chgtyp,OFF);
                 }
+            }
         }
 
 
