@@ -412,10 +412,6 @@ static void Ms10Task(void)
       {
          int rollingDirection = previousSpeed >= 0 ? 1 : -1;
 
-         if (ABS(previousSpeed) < 40)
-         {
-            torquePercent = 0;
-         }
          //When rolling backward while in forward gear, apply POSITIVE torque to slow down backward motion
          //Vice versa when in reverse gear and rolling forward.
          if (rollingDirection != requestedDirection)
