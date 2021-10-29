@@ -403,7 +403,7 @@ static void Ms10Task(void)
 
    if (Param::GetInt(Param::opmode) == MOD_RUN)
    {
-      torquePercent = FP_TOFLOAT(utils::ProcessThrottle(previousSpeed));
+      torquePercent = utils::ProcessThrottle(previousSpeed);
 
       //When requesting regen we need to be careful. If the car is not rolling
       //in the same direction as the selected gear, we will actually accelerate!

@@ -233,13 +233,12 @@ float ProcessThrottle(int speed)
    if (speed < Param::GetInt(Param::throtramprpm))
       Throttle::throttleRamp = Param::GetFloat(Param::throtramp);
    else
-      Throttle::throttleRamp = Param::GetAttrib(Param::throtramp)->max;
+      Throttle::throttleRamp = FP_TOFLOAT(Param::GetAttrib(Param::throtramp)->max);
 
    finalSpnt = utils::GetUserThrottleCommand();
 
 //   GetCruiseCreepCommand(finalSpnt, throtSpnt);
    finalSpnt = Throttle::RampThrottle(finalSpnt);
-
 
    Throttle::UdcLimitCommand(finalSpnt, Param::GetFloat(Param::udc));
    Throttle::IdcLimitCommand(finalSpnt, Param::GetFloat(Param::idc));
