@@ -7,9 +7,7 @@ namespace utils
 #define CAN_TIMEOUT       50  //500ms
 #define PRECHARGE_TIMEOUT 500 //5s
 
-uint32_t SOCVal=0;
 int32_t NetWh=0;
-
 
 int32_t change(int32_t x, int32_t in_min, int32_t in_max, int32_t out_min, int32_t out_max)
 {
@@ -55,7 +53,7 @@ void GetDigInputs(Can* can)
    #endif
 }
 
-int GetUserThrottleCommand()
+float GetUserThrottleCommand()
 {
    int potval, pot2val;
    bool brake = Param::GetBool(Param::din_brake);
@@ -70,7 +68,6 @@ int GetUserThrottleCommand()
    /* Error light on implausible value */
    if (!Throttle::CheckAndLimitRange(&potval, 0))
    {
-//        DigIo::err_out.Set();
       utils::PostErrorIfRunning(ERR_THROTTLE1);
       return 0;
    }
@@ -81,7 +78,6 @@ int GetUserThrottleCommand()
    {
       if (!Throttle::CheckDualThrottle(&potval, pot2val) || !throt2Res)
       {
-//            DigIo::err_out.Set();
          utils::PostErrorIfRunning(ERR_THROTTLE1);
          Param::SetInt(Param::potnom, 0);
          return 0;
@@ -168,7 +164,7 @@ void SelectDirection(_vehmodes targetVehicle, BMW_E65Class E65Vehicle)
    Param::SetInt(Param::dir, selectedDir);
 }
 
-s32fp ProcessUdc(uint32_t oldTime, int motorSpeed)
+float ProcessUdc(uint32_t oldTime, int motorSpeed)
 {
    // FIXME: 32bit integer?
    float udc = ((float)ISA::Voltage)/1000;//get voltage from isa sensor and post to parameter database
@@ -185,8 +181,8 @@ s32fp ProcessUdc(uint32_t oldTime, int motorSpeed)
    Param::SetFloat(Param::KWh, kwh);
    float Amph = ((float)ISA::Ah)/3600;//get Ah from isa sensor and post to parameter database
    Param::SetFloat(Param::AMPh, Amph);
-   s32fp udclim = Param::Get(Param::udclim);
-   s32fp udcsw = Param::Get(Param::udcsw);
+   float udclim = Param::GetFloat(Param::udclim);
+   float udcsw = Param::GetFloat(Param::udcsw);
 
    float deltaVolts1 = ABS((udc3/2)-udc2);
    float deltaVolts2 = ABS((udc2+udc3)-udc);
@@ -202,7 +198,7 @@ s32fp ProcessUdc(uint32_t oldTime, int motorSpeed)
    //HW_REV1 had 3.9k resistors
    int uauxGain = 210;
    Param::SetFloat(Param::uaux, ((float)AnaIn::uaux.Get()) / uauxGain);
-   s32fp udcfp = Param::Get(Param::udc);
+   float udcfp = Param::GetFloat(Param::udc);
 
    if (udcfp > udclim)
    {
@@ -230,13 +226,12 @@ s32fp ProcessUdc(uint32_t oldTime, int motorSpeed)
    return udcfp;
 }
 
-s32fp ProcessThrottle(int speed)
+float ProcessThrottle(int speed)
 {
-   // s32fp throtSpnt;
-   s32fp finalSpnt;
+   float finalSpnt;
 
    if (speed < Param::GetInt(Param::throtramprpm))
-      Throttle::throttleRamp = Param::Get(Param::throtramp);
+      Throttle::throttleRamp = Param::GetFloat(Param::throtramp);
    else
       Throttle::throttleRamp = Param::GetAttrib(Param::throtramp)->max;
 
@@ -246,27 +241,25 @@ s32fp ProcessThrottle(int speed)
    finalSpnt = Throttle::RampThrottle(finalSpnt);
 
 
-   Throttle::UdcLimitCommand(finalSpnt, Param::Get(Param::udc));
-   Throttle::IdcLimitCommand(finalSpnt, Param::Get(Param::idc));
+   Throttle::UdcLimitCommand(finalSpnt, Param::GetFloat(Param::udc));
+   Throttle::IdcLimitCommand(finalSpnt, Param::GetFloat(Param::idc));
    Throttle::SpeedLimitCommand(finalSpnt, ABS(speed));
 
-   if (Throttle::TemperatureDerate(Param::Get(Param::tmphs), Param::Get(Param::tmphsmax), finalSpnt))
+   if (Throttle::TemperatureDerate(Param::GetFloat(Param::tmphs), Param::GetFloat(Param::tmphsmax), finalSpnt))
    {
-//        DigIo::err_out.Set();
       ErrorMessage::Post(ERR_TMPHSMAX);
    }
 
-   if (Throttle::TemperatureDerate(Param::Get(Param::tmpm), Param::Get(Param::tmpmmax), finalSpnt))
+   if (Throttle::TemperatureDerate(Param::GetFloat(Param::tmpm), Param::GetFloat(Param::tmpmmax), finalSpnt))
    {
-//        DigIo::err_out.Set();
       ErrorMessage::Post(ERR_TMPMMAX);
    }
 
-   Param::SetFixed(Param::potnom, finalSpnt); //Show to user after all derating but before regen ramp down
+   Param::SetFloat(Param::potnom, finalSpnt); //Show to user after all derating but before regen ramp down
 
    Throttle::RegenRampDown(finalSpnt, speed);
 
-   if (finalSpnt < Param::Get(Param::brkout))
+   if (finalSpnt < Param::GetFloat(Param::brkout))
       DigIo::brk_out.Set();
    else
       DigIo::brk_out.Clear();
@@ -286,16 +279,13 @@ void displayThrottle()
 
 void CalcSOC()
 {
-   uint32_t Capacity_Parm = FP_FROMINT(Param::Get(Param::BattCap));
-   uint32_t kwh_Used = FP_FROMFLT(ABS(Param::Get(Param::KWh)));
+   float Capacity_Parm = Param::GetFloat(Param::BattCap);
+   float kwh_Used = ABS(Param::GetFloat(Param::KWh));
+   float SOCVal = 100.0f - ((kwh_Used / Capacity_Parm) * 100.0f);
 
+   SOCVal = MIN(100.0f, SOCVal);
 
-   SOCVal = 100-(FP_MUL(FP_DIV(kwh_Used,Capacity_Parm),100));
-
-
-   if(SOCVal>100) SOCVal=100;
-   Param::SetInt(Param::SOC,SOCVal);
-
+   Param::SetFloat(Param::SOC,SOCVal);
 }
 
 } // namespace utils

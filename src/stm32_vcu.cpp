@@ -480,10 +480,10 @@ static void Ms10Task(void)
    //////////////////////////////////////////////////
    //            MODE CONTROL SECTION              //
    //////////////////////////////////////////////////
-   s32fp udc = utils::ProcessUdc(oldTime, GetInt(Param::speed));
+   float udc = utils::ProcessUdc(oldTime, GetInt(Param::speed));
    stt |= Param::GetInt(Param::potnom) <= 0 ? STAT_NONE : STAT_POTPRESSED;
-   stt |= udc >= Param::Get(Param::udcsw) ? STAT_NONE : STAT_UDCBELOWUDCSW;
-   stt |= udc < Param::Get(Param::udclim) ? STAT_NONE : STAT_UDCLIM;
+   stt |= udc >= Param::GetFloat(Param::udcsw) ? STAT_NONE : STAT_UDCBELOWUDCSW;
+   stt |= udc < Param::GetFloat(Param::udclim) ? STAT_NONE : STAT_UDCLIM;
 
    if (opmode==MOD_OFF && (Param::GetBool(Param::din_start) || E65Vehicle.getTerminal15() || chargeMode))//on detection of ign on or charge mode enable we commence prechage and go to mode precharge
    {
@@ -577,7 +577,6 @@ static void Ms10Task(void)
       DigIo::dcsw_out.Clear();
       DigIo::gp_out2.Clear();//Negative contactors off
       DigIo::gp_out1.Clear();//Coolant pump off
-      DigIo::err_out.Clear();
       DigIo::prec_out.Clear();
       Param::SetInt(Param::opmode, newMode);
       if(targetVehicle == _vehmodes::BMW_E65) E65Vehicle.DashOff();
@@ -654,16 +653,16 @@ extern void parm_Change(Param::PARAM_NUM paramNum)
    Throttle::potmax[0] = Param::GetInt(Param::potmax);
    Throttle::potmin[1] = Param::GetInt(Param::pot2min);
    Throttle::potmax[1] = Param::GetInt(Param::pot2max);
-   Throttle::regenTravel = Param::Get(Param::regentravel);
-   Throttle::regenmax = Param::Get(Param::regenmax);
-   Throttle::throtmax = Param::Get(Param::throtmax);
-   Throttle::throtmin = Param::Get(Param::throtmin);
-   Throttle::idcmin = Param::Get(Param::idcmin);
-   Throttle::idcmax = Param::Get(Param::idcmax);
-   Throttle::udcmin = Param::Get(Param::udcmin); //Leave some room for the notification light
-   Throttle::udcmax = Param::Get(Param::udcmax); //Leave some room for the notification light
+   Throttle::regenTravel = Param::GetFloat(Param::regentravel);
+   Throttle::regenmax = Param::GetFloat(Param::regenmax);
+   Throttle::throtmax = Param::GetFloat(Param::throtmax);
+   Throttle::throtmin = Param::GetFloat(Param::throtmin);
+   Throttle::idcmin = Param::GetFloat(Param::idcmin);
+   Throttle::idcmax = Param::GetFloat(Param::idcmax);
+   Throttle::udcmin = Param::GetFloat(Param::udcmin); //Leave some room for the notification light
+   Throttle::udcmax = Param::GetFloat(Param::udcmax); //Leave some room for the notification light
    Throttle::speedLimit = Param::GetInt(Param::revlim);
-   Throttle::regenRamp = FP_FROMFLT(1);
+   Throttle::regenRamp = 1.0f; //TODO: make parameter
    targetInverter = static_cast<InvModes>(Param::GetInt(Param::Inverter));//get inverter setting from menu
    Param::SetInt(Param::inv, targetInverter);//Confirm mode
    targetVehicle=static_cast<_vehmodes>(Param::GetInt(Param::Vehicle));//get vehicle setting from menu
