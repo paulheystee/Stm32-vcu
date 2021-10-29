@@ -252,11 +252,13 @@ void Throttle::SpeedLimitCommand(float& finalSpnt, int speed)
 void Throttle::RegenRampDown(float& finalSpnt, int speed)
 {
    const float rampStart = 150.0f; //rpm
+   const float noRegen = 50.0f; //cut off regen below this
    float absSpeed = ABS(speed);
 
    if (finalSpnt < 0 && absSpeed < rampStart) //regen
    {
-      float ratio = absSpeed / rampStart;
+      float ratio = (absSpeed - noRegen) / (rampStart - noRegen);
+      ratio = MAX(0, ratio);
       finalSpnt = finalSpnt * ratio;
    }
 }
