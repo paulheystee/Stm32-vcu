@@ -567,7 +567,6 @@ static void Ms10Task(void)
    if (newMode != MOD_OFF)
    {
       DigIo::dcsw_out.Set();
-//        DigIo::err_out.Clear();
       Param::SetInt(Param::opmode, newMode);
       ErrorMessage::UnpostAll();
    }
@@ -578,7 +577,7 @@ static void Ms10Task(void)
       DigIo::dcsw_out.Clear();
       DigIo::gp_out2.Clear();//Negative contactors off
       DigIo::gp_out1.Clear();//Coolant pump off
-//        DigIo::err_out.Clear();
+      DigIo::err_out.Clear();
       DigIo::prec_out.Clear();
       Param::SetInt(Param::opmode, newMode);
       if(targetVehicle == _vehmodes::BMW_E65) E65Vehicle.DashOff();
