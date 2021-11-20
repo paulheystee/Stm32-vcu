@@ -172,11 +172,25 @@ static void Ms200Task(void)
 
    }
 
-   if(targetChgint == _interface::Leaf_PDM) //Leaf Gen2 PDM charger/DCDC/Chademo
-   {
+      if(targetChgint == _interface::Leaf_PDM) //Leaf Gen2/3 PDM charger/DCDC/Chademo
+    {
       if (opmode == MOD_CHARGE || opmode == MOD_RUN)  DigIo::inv_out.Set();//inverter and PDM power on if using pdm and in chg mode or in run mode
       if (opmode == MOD_OFF)  DigIo::inv_out.Clear();//inverter and pdm off in off mode. Duh!
-   }
+
+      if(opmode != MOD_RUN)                   //only run charge logic if not in run mode.
+            {
+                if(LeafINV::ControlCharge(RunChg))
+                {
+                chargeMode = true;   //AC charge mode
+                Param::SetInt(Param::chgtyp,AC);
+                }
+                else if(!LeafINV::ControlCharge(RunChg))
+                {
+                chargeMode = false;  //no charge mode
+                Param::SetInt(Param::chgtyp,OFF);
+                }
+            }
+    }
 
    if(targetChgint == _interface::i3LIM) //BMW i3 LIM
    {
@@ -826,6 +840,8 @@ extern "C" int main(void)
    c.SetReceiveCallback(CanCallback);
    c.RegisterUserMessage(0x1DA);//Leaf inv msg
    c.RegisterUserMessage(0x55A);//Leaf inv msg
+   c.RegisterUserMessage(0x679);//Leaf obc msg
+   c.RegisterUserMessage(0x390);//Leaf obc msg
    c.RegisterUserMessage(0x190);//Open Inv Msg
    c.RegisterUserMessage(0x19A);//Open Inv Msg
    c.RegisterUserMessage(0x1A4);//Open Inv Msg

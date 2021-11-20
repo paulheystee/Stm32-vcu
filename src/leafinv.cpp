@@ -35,6 +35,10 @@ static uint8_t counter_1f2=0;
 static uint8_t counter_55b=0;
 static uint8_t OBCpwrSP=0;
 static uint8_t OBCpwr=0;
+static bool OBCwake = false;
+static bool PPStat = false;
+static uint8_t OBCVoltStat=0;
+static uint8_t PlugStat=0;
 
 /*Info on running Leaf Gen 2 PDM
 IDs required :
@@ -74,6 +78,42 @@ void LeafINV::DecodeCAN(int id, uint32_t data[2])
       inv_temp = fahrenheit_to_celsius(bytes[2]);//INVERTER TEMP
       motor_temp = fahrenheit_to_celsius(bytes[1]);//MOTOR TEMP
    }
+
+    else if (id == 0x679)// THIS MSG FIRES ONCE ON CHARGE PLUG INSERT
+   {
+      uint8_t dummyVar = bytes[0];
+      dummyVar = dummyVar;
+      OBCwake = true;             //0x679 is received once when we plug in if pdm is asleep so wake wakey...
+   }
+
+    else if (id == 0x390)// THIS MSG FROM PDM
+   {
+      OBCVoltStat = (bytes[3] >> 3) & 0x03;
+      PlugStat = bytes[5] & 0x0F;
+      if(PlugStat == 0x08) PPStat = true; //plug inserted
+      if(PlugStat == 0x00) PPStat = false; //plug not inserted
+   }
+}
+
+bool LeafINV::ControlCharge(bool RunCh)
+{
+    int opmode = Param::GetInt(Param::opmode);
+    if(opmode != MOD_CHARGE)
+    {
+    if(RunCh && OBCwake)
+    {
+        //OBCwake = false;//reset obc wake for next time
+        return true;
+    }
+    }
+
+    if(PPStat) return true;
+    if(!PPStat)
+        {
+            OBCwake = false;
+            return false;
+        }
+return false;
 }
 
 void LeafINV::SetTorque(float torquePercent)

@@ -30,6 +30,7 @@ public:
    void DecodeCAN(int id, uint32_t data[2]);
    void Task10Ms();
    void Task100Ms();
+   static bool ControlCharge(bool RunCh);
    void SetTorque(float torque);
    float GetMotorTemperature() { return motor_temp; }
    float GetInverterTemperature() { return inv_temp; }
