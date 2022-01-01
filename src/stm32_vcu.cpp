@@ -916,31 +916,31 @@ extern "C" int main(void)
     DigIo::mcp_sby.Clear();//enable can3
 
 
-    Can c(CAN1, (Can::baudrates)Param::GetInt(Param::canspeed));//can1 Inverter / isa shunt/LIM.
+    Can c1(CAN1, (Can::baudrates)Param::GetInt(Param::canspeed));//can1 Inverter / isa shunt/LIM.
     Can c2(CAN2, (Can::baudrates)Param::GetInt(Param::canspeed));//can2 vehicle side.
 
     // Set up CAN 1 callback and messages to listen for
-    c.SetReceiveCallback(CanCallback);
-    c.RegisterUserMessage(0x1DA);//Leaf inv msg
-    c.RegisterUserMessage(0x55A);//Leaf inv msg
-    c.RegisterUserMessage(0x679);//Leaf obc msg
-    c.RegisterUserMessage(0x390);//Leaf obc msg
-    c.RegisterUserMessage(0x190);//Open Inv Msg
-    c.RegisterUserMessage(0x19A);//Open Inv Msg
-    c.RegisterUserMessage(0x1A4);//Open Inv Msg
-    c.RegisterUserMessage(0x521);//ISA MSG
-    c.RegisterUserMessage(0x522);//ISA MSG
-    c.RegisterUserMessage(0x523);//ISA MSG
-    c.RegisterUserMessage(0x524);//ISA MSG
-    c.RegisterUserMessage(0x525);//ISA MSG
-    c.RegisterUserMessage(0x526);//ISA MSG
-    c.RegisterUserMessage(0x527);//ISA MSG
-    c.RegisterUserMessage(0x528);//ISA MSG
-    c.RegisterUserMessage(0x3b4);//LIM MSG
-    c.RegisterUserMessage(0x29e);//LIM MSG
-    c.RegisterUserMessage(0x2b2);//LIM MSG
-    c.RegisterUserMessage(0x2ef);//LIM MSG
-    c.RegisterUserMessage(0x272);//LIM MSG
+    c1.SetReceiveCallback(CanCallback);
+    c1.RegisterUserMessage(0x1DA);//Leaf inv msg
+    c1.RegisterUserMessage(0x55A);//Leaf inv msg
+    c1.RegisterUserMessage(0x679);//Leaf obc msg
+    c1.RegisterUserMessage(0x390);//Leaf obc msg
+    c1.RegisterUserMessage(0x190);//Open Inv Msg
+    c1.RegisterUserMessage(0x19A);//Open Inv Msg
+    c1.RegisterUserMessage(0x1A4);//Open Inv Msg
+    c1.RegisterUserMessage(0x521);//ISA MSG
+    c1.RegisterUserMessage(0x522);//ISA MSG
+    c1.RegisterUserMessage(0x523);//ISA MSG
+    c1.RegisterUserMessage(0x524);//ISA MSG
+    c1.RegisterUserMessage(0x525);//ISA MSG
+    c1.RegisterUserMessage(0x526);//ISA MSG
+    c1.RegisterUserMessage(0x527);//ISA MSG
+    c1.RegisterUserMessage(0x528);//ISA MSG
+    c1.RegisterUserMessage(0x3b4);//LIM MSG
+    c1.RegisterUserMessage(0x29e);//LIM MSG
+    c1.RegisterUserMessage(0x2b2);//LIM MSG
+    c1.RegisterUserMessage(0x2ef);//LIM MSG
+    c1.RegisterUserMessage(0x272);//LIM MSG
 
     // Set up CAN 2 (Vehicle CAN) callback and messages to listen for.
     c2.SetReceiveCallback(CanCallback);
@@ -949,7 +949,7 @@ extern "C" int main(void)
     c2.RegisterUserMessage(0x108);//Charger HV request
     c2.RegisterUserMessage(0x153);//E39/E46 ASC1 message
 
-    can = &c; // FIXME: What about CAN2?
+    can = &c1; // FIXME: What about CAN2?
 
     CANSPI_Initialize();// init the MCP25625 on CAN3
     CANSPI_ENRx_IRQ();  //init CAN3 Rx IRQ
