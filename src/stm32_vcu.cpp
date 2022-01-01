@@ -29,7 +29,8 @@
 //#define  BMW_E39  5
 #define  VAG  6
 
-
+static digpot* objpot1;
+static digpot* objpot2;
 
 HWREV hwRev; // Hardware variant of board we are running on
 static Stm32Scheduler* scheduler;
@@ -139,6 +140,16 @@ static void RunChaDeMo()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void Ms200Task(void)
 {
+
+ static uint8_t pot1val=0;
+ static uint8_t pot2val=0; 
+ 
+  objpot1->SetPotStep(pot1val);
+  objpot2->SetPotStep(pot2val);
+  
+  pot1val+=1;   
+  pot2val+=2;
+
     if(chargerClass::HVreq==true) Param::SetInt(Param::hvChg,1);
     if(chargerClass::HVreq==false) Param::SetInt(Param::hvChg,0);
     int opmode = Param::GetInt(Param::opmode);
@@ -704,6 +715,7 @@ static void Ms1Task(void)
         // Torque updated in 10ms loop.
         gs450Inverter.UpdateHTMState1Ms(Param::Get(Param::dir));
     }
+
 }
 
 
@@ -753,8 +765,21 @@ extern void parm_Change(Param::PARAM_NUM paramNum)
 }
 
 
-static void CanCallback(uint32_t id, uint32_t data[2]) //This is where we go when a defined CAN message is received.
+static void CanCallback(uint32_t id, uint32_t data[2],uint8_t len) //This is where we go when a defined CAN message is received.
 {
+    static_cast<void>(len);
+    
+ //struct CanMsg
+  // {
+    //  uint16_t id;
+    //  uint32_t len;
+    //  uint8_t data[8];
+   //};
+
+     //uint8_t bdata[8];
+
+     //umemcpy(&bdata[0],&data[0],len);
+
     switch (id)
     {
     case 0x521:
@@ -899,10 +924,22 @@ extern "C" void rtc_isr(void)
 
 extern "C" int main(void)
 {
+
     clock_setup();
     rtc_setup();
     ConfigureVariantIO();
-   // gpio_primary_remap(AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON,AFIO_MAPR_USART3_REMAP_PARTIAL_REMAP);//remap usart 3 to PC10 and PC11 for VCU HW
+
+        //instantiate the potmeter objects
+    digpot pot1(SPI3, DigIo::pot1_cs);
+    digpot pot2(SPI3, DigIo::pot2_cs);
+
+    objpot1 = &pot1;
+    objpot2 = &pot2; 
+
+
+    gpio_primary_remap(AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON, AFIO_MAPR_CAN2_REMAP | AFIO_MAPR_USART3_REMAP_PARTIAL_REMAP | AFIO_MAPR_SPI3_REMAP );
+   
+    //remap usart 3 to PC10 and PC11 for VCU HW
     gpio_primary_remap(AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON,AFIO_MAPR_CAN2_REMAP);//32f107
     usart_setup();
     usart2_setup();//TOYOTA HYBRID INVERTER INTERFACE

@@ -34,6 +34,8 @@
 #include "CANSPI.h"
 #include "chademo.h"
 #include "heater.h"
+#include "digpot.h"
+#include "my_string.h"
 
 /*
 typedef union {
